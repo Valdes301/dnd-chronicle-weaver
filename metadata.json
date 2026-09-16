@@ -1,0 +1,8 @@
+{
+  "name": "2_Remix Remix dnd-chronicle-weaver",
+  "description": "Gestisci le tue campagne D&D 5e con la potenza dell'IA, ottimizzato per Docker e Raspberry Pi 4",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
