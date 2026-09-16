@@ -59,7 +59,7 @@ export function SettingsView({ campaignId }: { campaignId: string }) {
             if (res.success) {
                 toast({ title: "Campagna Eliminata", description: "Verrai reindirizzato alla pagina principale." });
                 window.location.href = '/';
-            } else throw new Error(res.error);
+            } else throw new Error(res.error || "Errore sconosciuto.");
         } catch (e: any) {
             toast({ variant: 'destructive', title: "Errore", description: e.message });
         } finally {
@@ -74,7 +74,7 @@ export function SettingsView({ campaignId }: { campaignId: string }) {
             if (res.success) {
                 toast({ title: "Scansione Completata!", description: `Ricollegate ${res.data?.relinkedCount || 0} immagini ai personaggi.` });
                 loadData();
-            } else throw new Error(res.error);
+            } else throw new Error(res.error || "Errore sconosciuto.");
         } catch (e: any) {
             toast({ variant: 'destructive', title: "Errore Ricollegamento", description: e.message });
         } finally {
@@ -89,7 +89,7 @@ export function SettingsView({ campaignId }: { campaignId: string }) {
             if (res.success) {
                 toast({ title: "File eliminato." });
                 setAssets(prev => prev.filter(a => a.name !== filename));
-            } else throw new Error(res.error);
+            } else throw new Error(res.error || "Errore sconosciuto.");
         } catch (e: any) {
             toast({ variant: 'destructive', title: "Errore", description: e.message });
         } finally {

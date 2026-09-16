@@ -29,7 +29,7 @@ export function WorldDb({ campaign, onSummarize, isSummarizing }: WorldDbProps) 
           if (res.success) {
               toast({ title: "Inizializzazione Completata!", description: "L'IA ha generato l'introduzione epica per la tua campagna." });
               router.refresh();
-          } else throw new Error(res.error);
+          } else throw new Error(res.error || "Errore sconosciuto.");
       } catch (e: any) {
           toast({ variant: 'destructive', title: "Errore IA", description: e.message });
       } finally {

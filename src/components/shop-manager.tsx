@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Store, Wand2, Plus, Trash2, Save, ShoppingBag, User, ScrollText, Sparkles, BookPlus, Percent, Skull, Pencil, Check, X, AlertCircle } from 'lucide-react';
+import { Store, Wand2, Plus, Trash2, Save, ShoppingBag, User, ScrollText, Sparkles, BookPlus, Percent, Skull, Pencil, Check, X, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as actions from '@/lib/actions';
 import { useRouter } from 'next/navigation';

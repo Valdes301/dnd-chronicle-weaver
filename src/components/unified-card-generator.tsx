@@ -426,7 +426,7 @@ export function UnifiedCardGenerator({ allItems, dbSpells }: UnifiedCardGenerato
                 const item = allItems.find(i => i.name === name);
                 if (item) {
                     let description = 'description' in item ? item.description : '';
-                    if (!description && 'damage' in item) description = `Proprietà: ${item.properties}\nPeso: ${item.weight}`;
+                    if (!description && 'damage' in item) description = `Proprietà: ${(item as any).properties}\nPeso: ${(item as any).weight}`;
                     else if (!description && 'armorClass' in item) description = `CA: ${item.armorClass}\nForza: ${item.strength}\nFurtività: ${item.stealth}`;
                     
                     setCardData(prev => ({

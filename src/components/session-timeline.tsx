@@ -575,7 +575,7 @@ export function SessionTimeline({
         const result = await actions.getSessionLoot(session.id);
         if (result.success && result.data) {
             setLootModalData({ session, ...result.data });
-        } else throw new Error(result.error);
+        } else throw new Error(result.error || "Errore sconosciuto.");
     } catch (e: any) {
         toast({ variant: "destructive", title: "Errore caricamento", description: e.message });
     }

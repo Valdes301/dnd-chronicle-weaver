@@ -530,7 +530,7 @@ export function NpcSummary({ campaignId, npcs: initialNpcs }: NpcSummaryProps) {
   useEffect(() => { loadData(); }, [campaignId]);
 
   const npcList = useMemo(() => {
-    const list = enrichedNpcs.length > 0 ? enrichedNpcs : initialNpcs.map(n => ({ ...n, details: JSON.parse(n.details) as NpcDetails, lastEvent: null }));
+    const list: NpcWithLastEvent[] = enrichedNpcs.length > 0 ? enrichedNpcs : initialNpcs.map(n => ({ ...n, details: typeof n.details === 'string' ? JSON.parse(n.details) as NpcDetails : n.details, lastEvent: null }));
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
   }, [initialNpcs, enrichedNpcs]);
 
@@ -672,8 +672,8 @@ export function NpcSummary({ campaignId, npcs: initialNpcs }: NpcSummaryProps) {
                   <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={isAnalyzing}><Settings className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => { setNpcToEdit(npc); setIsEditOpen(true); }}><Pencil className="mr-2 h-4 w-4"/> Modifica Scheda</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setHandoutNpc(npc)}><FileText className="mr-2 h-4 w-4 text-emerald-500"/> Esporta Handout</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setNpcToEdit(npc as NpcWithLastEvent); setIsEditOpen(true); }}><Pencil className="mr-2 h-4 w-4"/> Modifica Scheda</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setHandoutNpc(npc as NpcWithLastEvent)}><FileText className="mr-2 h-4 w-4 text-emerald-500"/> Esporta Handout</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleElaborateIdentity(npc.id)}><Sparkles className="mr-2 h-4 w-4 text-accent"/> Elabora Veloce</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDeepAnalysis(npc.id)}><RefreshCw className="mr-2 h-4 w-4 text-primary"/> Analisi Profonda</DropdownMenuItem>
                           <DropdownMenuSeparator />

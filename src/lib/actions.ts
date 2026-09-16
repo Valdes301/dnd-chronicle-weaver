@@ -484,7 +484,7 @@ export async function updateSessionNumber(sessionId: string, num: number) {
     try {
         const cols = getTableCols('Session');
         let query = "UPDATE Session SET session_number = ?";
-        const params = [num];
+        const params: any[] = [num];
         if (cols.includes('updatedat')) {
             query += ", updatedAt = ?";
             params.push(new Date().toISOString());
@@ -516,7 +516,7 @@ export async function updateSessionXp(sessionId: string, xp: number) {
     try {
         const cols = getTableCols('Session');
         let query = "UPDATE Session SET xp_award = ?";
-        const params = [xp];
+        const params: any[] = [xp];
         if (cols.includes('updatedat')) {
             query += ", updatedAt = ?";
             params.push(new Date().toISOString());
@@ -565,7 +565,7 @@ export async function reorderSessions(orderedIds: string[]) {
             query += " WHERE id = ?";
             const updateStmt = db.prepare(query);
             orderedIds.forEach((id, idx) => {
-                const params = [sortedNumbers[idx]];
+                const params: any[] = [sortedNumbers[idx]];
                 if (hasUpdatedAt) params.push(now);
                 params.push(id);
                 updateStmt.run(...params);
@@ -846,7 +846,7 @@ export async function updateNpcIdentityAction(npcId: string, campaignId: string)
         const override = await getSystemOverride('npc-gen');
         const data = await runAiWithRetry(() => updateNpcIdentityFlow({ npcName: npc.name, npcRace: npc.race, history: historyText, campaignSummary: campaign.summary || undefined, systemOverride: override }), 'WORLD');
         
-        const oldDetails = JSON.parse(npc.details);
+        const oldDetails = JSON.parse(npc.details) as any;
         if (oldDetails.imageUrl && oldDetails.imageUrl !== data.imageUrl) {
             deleteAssetFile(oldDetails.imageUrl);
         }
@@ -882,7 +882,7 @@ export async function deepNpcElaborationAction(npcId: string, campaignId: string
         db.transaction(() => {
             const now = new Date().toISOString();
             
-            const oldDetails = JSON.parse(npc.details);
+            const oldDetails = JSON.parse(npc.details) as any;
             if (oldDetails.imageUrl && oldDetails.imageUrl !== result.identity.imageUrl) {
                 deleteAssetFile(oldDetails.imageUrl);
             }
@@ -892,7 +892,7 @@ export async function deepNpcElaborationAction(npcId: string, campaignId: string
                 const sess = db.prepare("SELECT id FROM Session WHERE session_number = ? AND campaignId = ?").get(ev.sessionNumber, campaignId) as { id: string };
                 if (sess) {
                     const cols = ["id", "characterId", "characterType", "sessionId", "campaignId", "eventDescription"];
-                    const vals = [randomUUID(), npcId, 'npc', sess.id, campaignId, ev.eventDescription];
+                    const vals: any[] = [randomUUID(), npcId, 'npc', sess.id, campaignId, ev.eventDescription];
                     if (hasCharEventOrder) { cols.push("order_index"); vals.push(idx); }
                     if (hasCharEventDate) { cols.push("createdAt"); vals.push(now); }
                     const placeholders = cols.map(() => '?').join(',');
@@ -925,7 +925,7 @@ export async function saveMagicItem(item: Partial<MagicItem> & { campaignId: str
         }
 
         const magicItemCols = getTableCols('MagicItem');
-        const d: Record<string, any> = { id, name: item.name, type: item.type, rarity: item.rarity, attunement: item.attunement || 'No', description: item.description, cost: item.cost || 'N/D', damage: item.damage || '', techType: item.techType || 'damage', imageUrl: item.imageUrl || null, campaignId: item.campaignId, createdAt: item.createdAt || now, updatedAt: now };
+        const d: Record<string, any> = { id, name: item.name, type: item.type, rarity: item.rarity, attunement: item.attunement || 'No', description: item.description, cost: item.cost || 'N/D', damage: item.damage || '', techType: item.techType || 'damage', imageUrl: item.imageUrl || null, campaignId: item.campaignId, createdAt: (item as any).createdAt || now, updatedAt: now };
         const insertCols = Object.keys(d).filter(c => magicItemCols.includes(c.toLowerCase()));
         const placeholders = insertCols.map(() => '?').join(',');
         const updateSet = insertCols.filter(c => !['id', 'name', 'campaignid', 'createdat'].includes(c.toLowerCase())).map(c => `${c}=excluded.${c}`).join(', ');
@@ -956,7 +956,7 @@ export async function saveMonster(monster: Partial<Monster> & { campaignId: stri
         }
 
         const monsterCols = getTableCols('Monster');
-        const d: Record<string, any> = { id, name: monster.name, type: monster.type, armorClass: monster.armorClass, hitPoints: monster.hitPoints, challenge: monster.challenge, description: monster.description, imageUrl: monster.imageUrl || null, campaignId: monster.campaignId, createdAt: monster.createdAt || now, updatedAt: now };
+        const d: Record<string, any> = { id, name: monster.name, type: monster.type, armorClass: monster.armorClass, hitPoints: monster.hitPoints, challenge: monster.challenge, description: monster.description, imageUrl: monster.imageUrl || null, campaignId: monster.campaignId, createdAt: (monster as any).createdAt || now, updatedAt: now };
         const insertCols = Object.keys(d).filter(c => monsterCols.includes(c.toLowerCase()));
         const placeholders = insertCols.map(() => '?').join(',');
         const updateSet = insertCols.filter(c => !['id', 'name', 'campaignid', 'createdat'].includes(c.toLowerCase())).map(c => `${c}=excluded.${c}`).join(', ');
@@ -979,7 +979,7 @@ export async function saveSpell(spell: Partial<Spell> & { campaignId: string }) 
         const id = spell.id || randomUUID();
         const now = new Date().toISOString();
         const spellCols = getTableCols('CustomSpell');
-        const d: Record<string, any> = { id, name: spell.name, level: spell.level, school: spell.school, casting_time: spell.casting_time, range: spell.range, components: spell.components, duration: spell.duration, description: spell.description, classes: spell.classes, campaignId: spell.campaignId, createdAt: spell.createdAt || now, updatedAt: now };
+        const d: Record<string, any> = { id, name: spell.name, level: spell.level, school: spell.school, casting_time: spell.casting_time, range: spell.range, components: spell.components, duration: spell.duration, description: spell.description, classes: spell.classes, campaignId: spell.campaignId, createdAt: (spell as any).createdAt || now, updatedAt: now };
         const insertCols = Object.keys(d).filter(c => spellCols.includes(c.toLowerCase()));
         const placeholders = insertCols.map(() => '?').join(',');
         const updateSet = insertCols.filter(c => !['id', 'name', 'campaignid', 'createdat'].includes(c.toLowerCase())).map(c => `${c}=excluded.${c}`).join(', ');
@@ -1000,7 +1000,7 @@ export async function saveSkill(skill: Partial<Skill> & { campaignId: string }) 
         const id = skill.id || randomUUID();
         const now = new Date().toISOString();
         const skillCols = getTableCols('CustomSkill');
-        const d: Record<string, any> = { id, name: skill.name, ability: skill.ability, description: skill.description, campaignId: skill.campaignId, createdAt: skill.createdAt || now, updatedAt: now };
+        const d: Record<string, any> = { id, name: skill.name, ability: skill.ability, description: skill.description, campaignId: skill.campaignId, createdAt: (skill as any).createdAt || now, updatedAt: now };
         const insertCols = Object.keys(d).filter(c => skillCols.includes(c.toLowerCase()));
         const placeholders = insertCols.map(() => '?').join(',');
         const updateSet = insertCols.filter(c => !['id', 'name', 'campaignid', 'createdat'].includes(c.toLowerCase())).map(c => `${c}=excluded.${c}`).join(', ');
