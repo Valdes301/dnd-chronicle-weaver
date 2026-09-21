@@ -1,0 +1,8 @@
+{
+  "name": "3_Remix Remix dnd-chronicle-weaver",
+  "description": "Assistente e Grimorio digitale completo per Dungeon Master e Giocatori di D&D 5e, con generazione e gestione IA di campagne, dossier di lore, cronologia, PNG e blocco di sicurezza con sigillo magico.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
