@@ -356,7 +356,6 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_monster_campaign ON Monster (campaignId);
     CREATE INDEX IF NOT EXISTS idx_sessionloot_session ON SessionLoot (sessionId);
     CREATE INDEX IF NOT EXISTS idx_reward_campaign ON Reward (campaignId);
-    CREATE INDEX IF NOT EXISTS idx_characterevent_char ON CharacterEvent (characterId, characterType, order_index);
     CREATE INDEX IF NOT EXISTS idx_characterevent_session ON CharacterEvent (sessionId);
     CREATE INDEX IF NOT EXISTS idx_playercharacter_campaign ON PlayerCharacter (campaignId);
     CREATE INDEX IF NOT EXISTS idx_customspell_campaign ON CustomSpell (campaignId);
@@ -367,7 +366,6 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_combat_campaign ON Combat (campaignId);
     CREATE INDEX IF NOT EXISTS idx_homebrew_campaign ON HomebrewRule (campaignId, isActive);
     CREATE INDEX IF NOT EXISTS idx_lore_campaign ON LoreEntry (campaignId, category);
-    CREATE INDEX IF NOT EXISTS idx_lore_chronology ON LoreEntry (campaignId, chronology_order);
     CREATE INDEX IF NOT EXISTS idx_loreversion_entry ON LoreVersion (entryId, versionNumber DESC);
     CREATE INDEX IF NOT EXISTS idx_apiusage_timestamp ON ApiUsage (timestamp);
 `);
@@ -416,15 +414,25 @@ const migrations = [
 
 for (const m of migrations) {
     try {
-        const columns = db.prepare(`PRAGMA table_info(${m.table})`).all() as any[];
+        const columns = db.prepare(`PRAGMA table_info("${m.table}")`).all() as any[];
         const exists = columns.some(c => c.name.toLowerCase() === m.column.toLowerCase());
         if (!exists) {
-            console.log(`[DB Migration] Adding missing column ${m.column} to ${m.table}...`);
-            db.exec(`ALTER TABLE ${m.table} ADD COLUMN ${m.column} ${m.type}`);
+            console.log(`[DB Migration] Adding missing column ${m.column} to table ${m.table}...`);
+            db.exec(`ALTER TABLE "${m.table}" ADD COLUMN "${m.column}" ${m.type}`);
         }
     } catch (e) {
-        // Ignoriamo errori se la colonna esiste già ma non è stata rilevata correttamente (sicurezza extra)
+        console.error(`[DB Migration Error] Non è stato possibile migrare la colonna ${m.column} nella tabella ${m.table}:`, e);
     }
+}
+
+// Creazione degli indici complessi dipendenti dalle colonne migrate
+try {
+    db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_characterevent_char ON CharacterEvent (characterId, characterType, order_index);
+        CREATE INDEX IF NOT EXISTS idx_lore_chronology ON LoreEntry (campaignId, chronology_order);
+    `);
+} catch (e) {
+    console.error(`[DB Index Error] Errore nella creazione degli indici post-migrazione:`, e);
 }
 
 // Inizializzazione System Prompts predefiniti
