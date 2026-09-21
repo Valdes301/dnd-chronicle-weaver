@@ -81,13 +81,23 @@ export function configurePinAndPass(pin: string, password: string, autoLockMinut
     return { success: false, error: 'La Password deve contenere almeno 3 caratteri.' };
   }
 
-  localStorage.setItem(STORAGE_KEYS.PIN_HASH, hashSecret(cleanPin));
-  localStorage.setItem(STORAGE_KEYS.PASSWORD_HASH, hashSecret(cleanPass));
+  const pinHash = hashSecret(cleanPin);
+  const pwdHash = hashSecret(cleanPass);
+
+  localStorage.setItem(STORAGE_KEYS.PIN_HASH, pinHash);
+  localStorage.setItem(STORAGE_KEYS.PASSWORD_HASH, pwdHash);
   localStorage.setItem(STORAGE_KEYS.AUTOLOCK_MINUTES, String(autoLockMinutes));
   // Quando si configura il PIN, si apre la modalità Master e si sblocca lo schermo
   localStorage.setItem(STORAGE_KEYS.IS_PLAYER_MODE, 'false');
   localStorage.setItem(STORAGE_KEYS.IS_LOCKED, 'false');
   touchActivity();
+
+  // Salva asincronamente in background sul DB centralizzato
+  import('@/lib/actions').then(({ saveSystemSetting }) => {
+    saveSystemSetting('master_pin_hash', pinHash);
+    saveSystemSetting('master_password_hash', pwdHash);
+    saveSystemSetting('autolock_minutes', String(autoLockMinutes));
+  }).catch(err => console.error("Errore salvataggio DB PIN:", err));
 
   window.dispatchEvent(new CustomEvent('dnd-pin-config-changed'));
   window.dispatchEvent(new CustomEvent('dnd-player-mode-changed', { detail: { isPlayerMode: false } }));
@@ -117,6 +127,13 @@ export function removePinProtection(currentPinOrPassword: string): { success: bo
   localStorage.removeItem(STORAGE_KEYS.PIN_HASH);
   localStorage.removeItem(STORAGE_KEYS.PASSWORD_HASH);
   localStorage.removeItem(STORAGE_KEYS.IS_LOCKED);
+
+  // Rimuovi dal DB centralizzato
+  import('@/lib/actions').then(({ saveSystemSetting }) => {
+    saveSystemSetting('master_pin_hash', '');
+    saveSystemSetting('master_password_hash', '');
+  }).catch(err => console.error("Errore rimozione DB PIN:", err));
+
   window.dispatchEvent(new CustomEvent('dnd-pin-config-changed'));
   window.dispatchEvent(new CustomEvent('dnd-lock-state-changed', { detail: { isLocked: false } }));
   return { success: true };
@@ -175,6 +192,8 @@ export const NAV_SECTIONS: NavSectionMeta[] = [
   { id: 'lore', label: 'Lore & Ambientazione', description: 'Voci di lore, fazioni ed enciclopedia del mondo', category: 'master' },
   { id: 'personaggi', label: 'Personaggi Giocanti', description: 'Schede dei PG, allineamenti e inventario', category: 'master' },
   { id: 'riepilogo-png', label: 'Anagrafe dei PNG', description: 'Dossier dei personaggi non giocanti incontrati', category: 'master' },
+  { id: 'quest-creator', label: 'Crea Nuova Quest', description: 'Generatore avanzato per storie, PG, PNG e agganci', category: 'master', defaultBlocked: true },
+  { id: 'party-xp', label: 'Assegna PX Party', description: 'Calcolo e distribuzione ufficiale dei Punti Esperienza', category: 'master', defaultBlocked: true },
 
   // Strumenti Creativi
   { id: 'architetto', label: 'Architetto di Mondi', description: 'Luoghi, insediamenti e mappa concettuale', category: 'creativi' },
@@ -242,8 +261,14 @@ export function getBlockedViews(): string[] {
 
 export function setBlockedViews(views: string[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.BLOCKED_VIEWS, JSON.stringify(views));
+  const raw = JSON.stringify(views);
+  localStorage.setItem(STORAGE_KEYS.BLOCKED_VIEWS, raw);
   window.dispatchEvent(new CustomEvent('dnd-blocked-views-changed', { detail: { blockedViews: views } }));
+
+  // Salva nel DB centralizzato
+  import('@/lib/actions').then(({ saveSystemSetting }) => {
+    saveSystemSetting('blocked_views', raw);
+  }).catch(err => console.error("Errore salvataggio DB blocked_views:", err));
 }
 
 export function toggleBlockedView(viewId: string): string[] {
@@ -271,5 +296,46 @@ export function setBlockedBehavior(behavior: BlockedBehavior): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.BLOCKED_BEHAVIOR, behavior);
   window.dispatchEvent(new CustomEvent('dnd-blocked-behavior-changed', { detail: { behavior } }));
+
+  // Salva nel DB centralizzato
+  import('@/lib/actions').then(({ saveSystemSetting }) => {
+    saveSystemSetting('blocked_behavior', behavior);
+  }).catch(err => console.error("Errore salvataggio DB blocked_behavior:", err));
+}
+
+/**
+ * Sincronizza i dati di sicurezza ricevuti dal DB nel localStorage locale.
+ */
+export function syncFromDatabase(dbSettings: Record<string, string>): void {
+  if (typeof window === 'undefined') return;
+  
+  let changed = false;
+  
+  if (dbSettings.master_pin_hash && !localStorage.getItem(STORAGE_KEYS.PIN_HASH)) {
+    localStorage.setItem(STORAGE_KEYS.PIN_HASH, dbSettings.master_pin_hash);
+    changed = true;
+  }
+  if (dbSettings.master_password_hash && !localStorage.getItem(STORAGE_KEYS.PASSWORD_HASH)) {
+    localStorage.setItem(STORAGE_KEYS.PASSWORD_HASH, dbSettings.master_password_hash);
+    changed = true;
+  }
+  if (dbSettings.blocked_views && !localStorage.getItem(STORAGE_KEYS.BLOCKED_VIEWS)) {
+    localStorage.setItem(STORAGE_KEYS.BLOCKED_VIEWS, dbSettings.blocked_views);
+    changed = true;
+  }
+  if (dbSettings.blocked_behavior && !localStorage.getItem(STORAGE_KEYS.BLOCKED_BEHAVIOR)) {
+    localStorage.setItem(STORAGE_KEYS.BLOCKED_BEHAVIOR, dbSettings.blocked_behavior);
+    changed = true;
+  }
+  if (dbSettings.autolock_minutes && !localStorage.getItem(STORAGE_KEYS.AUTOLOCK_MINUTES)) {
+    localStorage.setItem(STORAGE_KEYS.AUTOLOCK_MINUTES, dbSettings.autolock_minutes);
+    changed = true;
+  }
+
+  if (changed) {
+    window.dispatchEvent(new CustomEvent('dnd-pin-config-changed'));
+    window.dispatchEvent(new CustomEvent('dnd-blocked-views-changed', { detail: { blockedViews: getBlockedViews() } }));
+    window.dispatchEvent(new CustomEvent('dnd-blocked-behavior-changed', { detail: { behavior: getBlockedBehavior() } }));
+  }
 }
 

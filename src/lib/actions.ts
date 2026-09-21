@@ -2551,3 +2551,34 @@ export async function formatAllSavedTextsAction(campaignId?: string) {
         return actionResponse(null, e.message);
     }
 }
+
+/**
+ * Ottiene tutte le impostazioni di sistema salvate nel database.
+ */
+export async function getSystemSettings(): Promise<Record<string, string>> {
+    try {
+        const rows = db.prepare('SELECT key, value FROM SystemSetting').all() as { key: string, value: string }[];
+        const settings: Record<string, string> = {};
+        for (const row of rows) {
+            settings[row.key] = row.value;
+        }
+        return settings;
+    } catch (e) {
+        console.error("Errore nel recupero dei SystemSetting:", e);
+        return {};
+    }
+}
+
+/**
+ * Salva o aggiorna un'impostazione di sistema nel database.
+ */
+export async function saveSystemSetting(key: string, value: string) {
+    'use server';
+    try {
+        db.prepare('INSERT INTO SystemSetting (key, value, updatedAt) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updatedAt = CURRENT_TIMESTAMP').run(key, value);
+        return actionResponse({ success: true });
+    } catch (e: any) {
+        console.error(`Errore nel salvataggio di SystemSetting ${key}:`, e);
+        return actionResponse(null, e.message);
+    }
+}

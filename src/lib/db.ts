@@ -348,6 +348,12 @@ db.exec(`
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS SystemSetting (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- INDICI AD ALTE PRESTAZIONI PER QUERY ISTANTANEE
     CREATE INDEX IF NOT EXISTS idx_storyarc_campaign ON StoryArc (campaignId, status);
     CREATE INDEX IF NOT EXISTS idx_session_campaign ON Session (campaignId, is_archived, session_number);

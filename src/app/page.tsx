@@ -1,5 +1,6 @@
 import { CampaignManager } from '@/components/campaign-manager';
 import db from '@/lib/db';
+import { getSystemSettings } from '@/lib/actions';
 import type { MagicItem, Monster, Spell, Skill, CampaignWithRelations, Session, Campaign, PlayerCharacter, LetterPreset, Shop, WorldLocation, Npc, Combat, StoryArc, LoreEntry, HomebrewRule } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -91,6 +92,7 @@ export default async function Page(props: {
   const initialView = typeof searchParams?.view === 'string' ? searchParams.view : undefined;
 
   const { campaigns, activeCampaign, activeArc, sessions, magicItems: createdMagicItems, monsters: createdMonsters, playerCharacters, customSpells, customSkills, possessedItems, letterPresets, shops, worldLocations, npcs, combats, loreEntries, homebrewRules } = await getCampaignsData(campaignId);
+  const dbSettings = await getSystemSettings();
 
   const activeCampaignWithRelations: CampaignWithRelations | null = activeCampaign ? {
     ...activeCampaign,
@@ -120,6 +122,7 @@ export default async function Page(props: {
       combats={combats}
       customSpells={customSpells}
       customSkills={customSkills}
+      dbSettings={dbSettings}
     />
   );
 }

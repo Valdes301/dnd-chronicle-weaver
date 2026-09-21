@@ -174,6 +174,20 @@ export function CampaignHub({
   const characters = campaign.playerCharacters || [];
   const [boardBgConfig, setBoardBgConfig] = useState<BackgroundConfig>(DEFAULT_BACKGROUND_SETTINGS.dashboard);
   const [playerMode, setPlayerMode] = useState<boolean>(true);
+  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWelcomeDismissed(localStorage.getItem('dnd_welcome_dismissed') === 'true');
+    }
+  }, []);
+
+  const handleDismissWelcome = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dnd_welcome_dismissed', 'true');
+      setWelcomeDismissed(true);
+    }
+  };
 
   const handleOpenCharacters = useCallback(() => {
     onNavigateTo('personaggi');
