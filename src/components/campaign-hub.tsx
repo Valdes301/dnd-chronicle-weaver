@@ -36,7 +36,7 @@ import {
   resolveBackgroundStyle, 
   BackgroundConfig 
 } from '@/lib/background-storage';
-import { isPlayerMode, hasMasterConfiguredViews } from '@/lib/pin-storage';
+import { isPlayerMode } from '@/lib/pin-storage';
 
 // Tabella di riferimento EXP per Livello D&D 5e
 const LEVEL_XP_TABLE: Record<number, number> = {
@@ -374,121 +374,84 @@ export function CampaignHub({
         )}
       </div>
 
-      {playerMode && !hasMasterConfiguredViews() ? (
-        <div className="relative z-10 space-y-6 pt-8 max-w-3xl mx-auto">
-          <Card className="relative bg-[#19110b]/95 border-2 border-amber-800/60 text-stone-200 shadow-2xl backdrop-blur-md overflow-hidden rounded-xl p-6 sm:p-8 md:p-10 text-center space-y-6">
-            {/* Chiodi metallici di affissione agli angoli superiori del documento */}
-            <div className="absolute top-2.5 left-4 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-600 to-amber-950 border border-amber-950 shadow-md z-20 flex items-center justify-center">
-              <div className="w-1 h-1 rounded-full bg-amber-100" />
-            </div>
-            <div className="absolute top-2.5 right-4 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-600 to-amber-950 border border-amber-950 shadow-md z-20 flex items-center justify-center">
-              <div className="w-1 h-1 rounded-full bg-amber-100" />
-            </div>
-
-            <div className="flex justify-center">
-              <div className="h-16 w-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-950/50 animate-pulse">
-                <Sparkles className="h-8 w-8 text-amber-300" />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-2xl sm:text-3xl font-bold font-headline text-amber-200 tracking-wide drop-shadow-md">
-                Benvenuti, Valorosi Avventurieri!
-              </h3>
-              <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-amber-600 to-transparent mx-auto" />
-            </div>
-
-            <p className="text-base sm:text-lg md:text-xl font-serif text-amber-100/90 leading-relaxed italic px-2 sm:px-6">
-              &ldquo;Il sentiero innanzi a voi è avvolto dalle nebbie del destino. Solo coloro che cercano la conoscenza con ardore, che bramano la gloria e che non temono l&apos;oscurità vedranno il proprio nome scritto tra le leggende. Preparate le vostre menti, affilate il vostro ingegno e accendete le lanterne della curiosità: una nuova era di fama, gloria e leggendarie avventure ha inizio...&rdquo;
-            </p>
-
-            <div className="pt-4 text-xs text-stone-400 font-sans tracking-wider uppercase border-t border-amber-900/30">
-              ⚔️ Il vostro Dungeon Master sta forgiando il mondo. Il viaggio comincerà presto. ⚔️
-            </div>
-          </Card>
+      {/* Sezione PG: Tante Box quanti sono i Personaggi Giocanti */}
+      <div className="relative z-10 space-y-4 pt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-amber-400" />
+            <h3 className="text-xl font-bold font-headline text-amber-200 tracking-wide drop-shadow-sm">
+              I Personaggi Giocanti ({characters.length})
+            </h3>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => onNavigateTo('personaggi')}
+            className="text-xs text-amber-300 hover:text-amber-100 hover:bg-amber-950/60 border border-amber-900/50 gap-1.5 transition-all shadow-sm"
+          >
+            Gestisci Schede <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
         </div>
-      ) : (
-        <>
-          {/* Sezione PG: Tante Box quanti sono i Personaggi Giocanti */}
-          <div className="relative z-10 space-y-4 pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-amber-400" />
-                <h3 className="text-xl font-bold font-headline text-amber-200 tracking-wide drop-shadow-sm">
-                  I Personaggi Giocanti ({characters.length})
-                </h3>
+
+        {characters.length === 0 ? (
+          <Card className="bg-[#1e150f]/80 border-dashed border-amber-800/40 text-center p-8 backdrop-blur-sm shadow-inner">
+            <CardContent className="flex flex-col items-center justify-center space-y-3 p-0">
+              <div className="h-12 w-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <UserPlus className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-amber-200">Nessun PG Registrato</p>
+                <p className="text-xs text-amber-200/60 max-w-sm">
+                  Crea i personaggi della compagnia per visualizzare le loro statistiche e i punti ferita nella bacheca.
+                </p>
               </div>
               <Button 
-                variant="ghost" 
-                size="sm"
                 onClick={() => onNavigateTo('personaggi')}
-                className="text-xs text-amber-300 hover:text-amber-100 hover:bg-amber-950/60 border border-amber-900/50 gap-1.5 transition-all shadow-sm"
+                size="sm"
+                className="bg-amber-700 hover:bg-amber-600 text-stone-100 font-medium gap-2 shadow-lg"
               >
-                Gestisci Schede <ArrowRight className="h-3.5 w-3.5" />
+                <UserPlus className="h-4 w-4" /> Aggiungi Personaggio
               </Button>
-            </div>
-
-            {characters.length === 0 ? (
-              <Card className="bg-[#1e150f]/80 border-dashed border-amber-800/40 text-center p-8 backdrop-blur-sm shadow-inner">
-                <CardContent className="flex flex-col items-center justify-center space-y-3 p-0">
-                  <div className="h-12 w-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                    <UserPlus className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-semibold text-amber-200">Nessun PG Registrato</p>
-                    <p className="text-xs text-amber-200/60 max-w-sm">
-                      Crea i personaggi della compagnia per visualizzare le loro statistiche e i punti ferita nella bacheca.
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={() => onNavigateTo('personaggi')}
-                    size="sm"
-                    className="bg-amber-700 hover:bg-amber-600 text-stone-100 font-medium gap-2 shadow-lg"
-                  >
-                    <UserPlus className="h-4 w-4" /> Aggiungi Personaggio
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5 pt-2">
-                {characters.map((pc) => (
-                  <HubCharacterCard 
-                    key={pc.id}
-                    pc={pc}
-                    totalSessionXp={totalSessionXp}
-                    onSelect={handleOpenCharacters}
-                  />
-                ))}
-              </div>
-            )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5 pt-2">
+            {characters.map((pc) => (
+              <HubCharacterCard 
+                key={pc.id}
+                pc={pc}
+                totalSessionXp={totalSessionXp}
+                onSelect={handleOpenCharacters}
+              />
+            ))}
           </div>
+        )}
+      </div>
 
-          {/* Sezione Riassunto della Storia */}
-          <div className="relative z-10 space-y-4 pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ScrollText className="h-5 w-5 text-amber-400" />
-                <h3 className="text-xl font-bold font-headline text-amber-200 tracking-wide drop-shadow-sm">
-                  Riassunto della Storia
-                </h3>
-              </div>
-            </div>
-
-            <Card className="relative bg-[#19110b]/95 border border-amber-900/50 text-stone-200 shadow-2xl backdrop-blur-md overflow-hidden rounded-xl">
-              {/* Chiodi metallici di affissione agli angoli superiori del documento */}
-              <div className="absolute top-2.5 left-4 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-600 to-amber-950 border border-amber-950 shadow-md z-20 flex items-center justify-center">
-                <div className="w-1 h-1 rounded-full bg-amber-100" />
-              </div>
-              <div className="absolute top-2.5 right-4 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-600 to-amber-950 border border-amber-950 shadow-md z-20 flex items-center justify-center">
-                <div className="w-1 h-1 rounded-full bg-amber-100" />
-              </div>
-              <CardContent className="p-5 sm:p-6 pt-7 space-y-4 max-h-[420px] overflow-y-auto leading-relaxed text-sm sm:text-base font-serif text-amber-100/90">
-                <MarkdownRenderer content={storySummaryText} />
-              </CardContent>
-            </Card>
+      {/* Sezione Riassunto della Storia */}
+      <div className="relative z-10 space-y-4 pt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ScrollText className="h-5 w-5 text-amber-400" />
+            <h3 className="text-xl font-bold font-headline text-amber-200 tracking-wide drop-shadow-sm">
+              Riassunto della Storia
+            </h3>
           </div>
-        </>
-      )}
+        </div>
+
+        <Card className="relative bg-[#19110b]/95 border border-amber-900/50 text-stone-200 shadow-2xl backdrop-blur-md overflow-hidden rounded-xl">
+          {/* Chiodi metallici di affissione agli angoli superiori del documento */}
+          <div className="absolute top-2.5 left-4 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-600 to-amber-950 border border-amber-950 shadow-md z-20 flex items-center justify-center">
+            <div className="w-1 h-1 rounded-full bg-amber-100" />
+          </div>
+          <div className="absolute top-2.5 right-4 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-200 via-amber-600 to-amber-950 border border-amber-950 shadow-md z-20 flex items-center justify-center">
+            <div className="w-1 h-1 rounded-full bg-amber-100" />
+          </div>
+          <CardContent className="p-5 sm:p-6 pt-7 space-y-4 max-h-[420px] overflow-y-auto leading-relaxed text-sm sm:text-base font-serif text-amber-100/90">
+            <MarkdownRenderer content={storySummaryText} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

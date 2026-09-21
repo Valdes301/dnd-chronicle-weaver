@@ -48,7 +48,6 @@ import {
   getBlockedViews,
   getBlockedBehavior,
   BlockedBehavior,
-  hasMasterConfiguredViews,
 } from '@/lib/pin-storage';
 import { PinPromptDialog } from './pin-prompt-dialog';
 
@@ -163,12 +162,8 @@ export const SidebarNav = memo(function SidebarNav({ activeView, onViewChange, o
   };
 
   const renderMenuItem = (item: { id: string; label: string; icon: any }) => {
-    const isBlocked = playerMode && (
-      !hasMasterConfiguredViews() 
-        ? item.id !== 'bacheca' 
-        : blockedViews.includes(item.id)
-    );
-    if (isBlocked && (blockedBehavior === 'hide' || !hasMasterConfiguredViews())) {
+    const isBlocked = playerMode && blockedViews.includes(item.id);
+    if (isBlocked && blockedBehavior === 'hide') {
       return null;
     }
 
@@ -209,12 +204,8 @@ export const SidebarNav = memo(function SidebarNav({ activeView, onViewChange, o
 
   // Filtra la visibilità dei gruppi se tutti gli elementi sono nascosti
   const isItemVisible = (id: string) => {
-    const isBlocked = playerMode && (
-      !hasMasterConfiguredViews() 
-        ? id !== 'bacheca' 
-        : blockedViews.includes(id)
-    );
-    return !(isBlocked && (blockedBehavior === 'hide' || !hasMasterConfiguredViews()));
+    const isBlocked = playerMode && blockedViews.includes(id);
+    return !(isBlocked && blockedBehavior === 'hide');
   };
   const hasVisibleNavItems = navItems.some(i => isItemVisible(i.id));
   const hasVisibleCreativeItems = creativeItems.some(i => isItemVisible(i.id));
