@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useId } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShieldCheck, Swords, PlusCircle, Plus, Trash2, Pencil, ChevronDown, CheckCircle, Filter, ArrowUp, X, Sword, Shield, Heart, Beaker, Zap, Trophy } from 'lucide-react';
+import { ShieldCheck, Swords, PlusCircle, Plus, Trash2, Pencil, ChevronDown, CheckCircle, Filter, ArrowUp, X, Sword, Shield, Heart, Beaker, Zap, Trophy, Sparkles } from 'lucide-react';
 import type { Weapon, Armor, MagicItem, TechType } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem } from '@/components/ui/accordion';
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
@@ -203,6 +203,7 @@ export function EquipmentDb({ armor, weapons, magicArmor, magicWeapons, campaign
   const [sortBy, setSortBy] = useState('alphabetical');
   const [showPossessed, setShowPossessed] = useState(false);
   const [selectedRarities, setSelectedRarities] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'base' | 'created'>('all');
 
   const handleRarityChange = (rarity: string) => {
     setSelectedRarities(prev => 
@@ -238,6 +239,12 @@ export function EquipmentDb({ armor, weapons, magicArmor, magicWeapons, campaign
     if (selectedRarities.length > 0) {
         items = items.filter(item => 'rarity' in item && selectedRarities.includes(item.rarity));
     }
+
+    if (sourceFilter === 'base') {
+      items = items.filter(item => !('source' in item && item.source === 'created') && !('campaignId' in item && item.campaignId));
+    } else if (sourceFilter === 'created') {
+      items = items.filter(item => ('source' in item && item.source === 'created') || ('campaignId' in item && item.campaignId));
+    }
     
     items.sort((a, b) => {
         switch (sortBy) {
@@ -255,7 +262,7 @@ export function EquipmentDb({ armor, weapons, magicArmor, magicWeapons, campaign
 
     return items;
 
-  }, [armorSearch, armor, magicArmor, sortBy, showPossessed, selectedRarities, possessedItems]);
+  }, [armorSearch, armor, magicArmor, sortBy, showPossessed, selectedRarities, possessedItems, sourceFilter]);
 
   const filteredAndSortedWeapons = useMemo(() => {
     const uniqueMap = new Map<string, Weapon | MagicItem>();
@@ -280,11 +287,17 @@ export function EquipmentDb({ armor, weapons, magicArmor, magicWeapons, campaign
     if (showPossessed) {
         items = items.filter(item => possessedItems.includes(item.name));
     }
-    
+
     if (selectedRarities.length > 0) {
         items = items.filter(item => 'rarity' in item && selectedRarities.includes(item.rarity));
     }
-    
+
+    if (sourceFilter === 'base') {
+      items = items.filter(item => !('source' in item && item.source === 'created') && !('campaignId' in item && item.campaignId));
+    } else if (sourceFilter === 'created') {
+      items = items.filter(item => ('source' in item && item.source === 'created') || ('campaignId' in item && item.campaignId));
+    }
+
     items.sort((a, b) => {
         switch (sortBy) {
             case 'cost-asc':
@@ -300,7 +313,7 @@ export function EquipmentDb({ armor, weapons, magicArmor, magicWeapons, campaign
     });
 
     return items;
-  }, [weaponSearch, weapons, magicWeapons, sortBy, showPossessed, selectedRarities, possessedItems]);
+  }, [weaponSearch, weapons, magicWeapons, sortBy, showPossessed, selectedRarities, possessedItems, sourceFilter]);
 
   const filterControls = (searchVal: string, setSearch: (v: string) => void) => (
      <div className="space-y-4">
@@ -354,6 +367,24 @@ export function EquipmentDb({ armor, weapons, magicArmor, magicWeapons, campaign
                             {rarity}
                         </DropdownMenuCheckboxItem>
                     ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex-shrink-0 text-[10px] uppercase font-bold">
+                        <Sparkles className="mr-2 h-3.5 w-3.5 text-amber-500" /> Origine: {
+                            sourceFilter === 'all' ? 'Tutti' :
+                            sourceFilter === 'base' ? 'Solo Base' : 'Solo Creati'
+                        }
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuRadioGroup value={sourceFilter} onValueChange={(val) => setSourceFilter(val as any)}>
+                        <DropdownMenuRadioItem value="all">Tutti gli Oggetti</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="base">🛡️ Solo Base (SRD)</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="created">✨ Solo Creati (Custom)</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
 

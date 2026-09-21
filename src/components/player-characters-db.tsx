@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Pencil, ImagePlus, Loader2, History, User2, Star, Sparkles, Target, Fingerprint, ChevronDown, BookOpen, Heart, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Pencil, ImagePlus, Loader2, History, User2, Star, Sparkles, Target, Fingerprint, ChevronDown, BookOpen, Heart, GripVertical, Check } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';

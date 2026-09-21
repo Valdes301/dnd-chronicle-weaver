@@ -64,6 +64,66 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 
+export function getDefaultRoleForNpc(npc: Npc): NpcQuestRole {
+  try {
+    const parsed = typeof npc.details === 'string' ? JSON.parse(npc.details || '{}') : (npc.details || {});
+    const fullText = [
+      npc.name,
+      npc.alignment,
+      npc.status,
+      parsed.role,
+      parsed.relationship,
+      parsed.disposition,
+      parsed.attitude,
+      parsed.occupation,
+      parsed.personality,
+      parsed.mannerism,
+      parsed.secret,
+      parsed.encounterHook,
+      parsed.alignment,
+      parsed.faction,
+      parsed.history
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if (fullText.match(/doppiogioch|doppio gi|traditor|spia|ingann|infiltrat/i)) {
+      return 'doppiogiochista';
+    }
+
+    if (fullText.match(/compagno|spalla|guardia del corpo|seguace|membro del party/i)) {
+      return 'compagno_party';
+    }
+
+    if (
+      fullText.match(/nemico|ostile|antagonista|rivale|boss|malvagio|bandito|assassino|mostro|minaccia|avversario|criminale/i) ||
+      (npc.alignment && npc.alignment.toLowerCase().includes('malvagio')) ||
+      (parsed.alignment && parsed.alignment.toLowerCase().includes('malvagio'))
+    ) {
+      return 'nemico';
+    }
+
+    if (
+      fullText.match(/amico|alleato|guida|committente|sostenitore|protettore|benefattore|re|duca|taverniere|mercat/i) ||
+      (npc.alignment && npc.alignment.toLowerCase().includes('buono')) ||
+      (parsed.alignment && parsed.alignment.toLowerCase().includes('buono'))
+    ) {
+      return 'amico';
+    }
+  } catch (e) {
+    // fallback
+  }
+
+  return 'amico';
+}
+
+const roleBadgeLabels: Record<NpcQuestRole, { label: string; colorClass: string }> = {
+  amico: { label: 'Amico', colorClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
+  nemico: { label: 'Nemico', colorClass: 'bg-rose-500/10 text-rose-400 border-rose-500/30' },
+  doppiogiochista: { label: 'Doppiogiochista', colorClass: 'bg-purple-500/10 text-purple-400 border-purple-500/30' },
+  da_amico_a_nemico: { label: 'Traditore', colorClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
+  da_nemico_a_amico: { label: 'Redento', colorClass: 'bg-sky-500/10 text-sky-400 border-sky-500/30' },
+  compagno_party: { label: 'Spalla', colorClass: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' }
+};
+
 interface GranularQuestCreatorProps {
   campaign: CampaignWithRelations;
   onQuestSaved?: (newSession: Session) => void;
@@ -185,10 +245,25 @@ export function GranularQuestCreator({
     setSelectedPcs(prev => prev.map(p => (p.pcId === pcId ? { ...p, ...updates } : p)));
   };
 
+  // Item filter state (Tutti, Base, Creati)
+  const [itemSourceFilter, setItemSourceFilter] = useState<'all' | 'base' | 'created'>('all');
+
+  const filteredMagicItems = useMemo(() => {
+    const items = campaign.magicItems || [];
+    if (itemSourceFilter === 'base') {
+      return items.filter(i => i.source === 'base' || (!i.source && !i.campaignId));
+    }
+    if (itemSourceFilter === 'created') {
+      return items.filter(i => i.source === 'created' || !!i.campaignId);
+    }
+    return items;
+  }, [campaign.magicItems, itemSourceFilter]);
+
   // Toggle NPC selection
   const handleToggleNpc = (npc: Npc) => {
     const parsed = typeof npc.details === 'string' ? JSON.parse(npc.details || '{}') : npc.details;
-    const name = parsed?.name || 'PNG Senza Nome';
+    const name = parsed?.name || npc.name || 'PNG Senza Nome';
+    const defaultRole = getDefaultRoleForNpc(npc);
     setSelectedNpcs(prev => {
       const exists = prev.some(n => n.npcId === npc.id);
       if (exists) {
@@ -199,7 +274,7 @@ export function GranularQuestCreator({
           {
             npcId: npc.id,
             name,
-            role: 'amico',
+            role: defaultRole,
             customGoal: '',
           },
         ];
@@ -211,10 +286,11 @@ export function GranularQuestCreator({
     setSelectedNpcs(
       (campaign.npcs || []).map(npc => {
         const parsed = typeof npc.details === 'string' ? JSON.parse(npc.details || '{}') : npc.details;
+        const defaultRole = getDefaultRoleForNpc(npc);
         return {
           npcId: npc.id,
-          name: parsed?.name || 'PNG Senza Nome',
-          role: 'amico',
+          name: parsed?.name || npc.name || 'PNG Senza Nome',
+          role: defaultRole,
           customGoal: '',
         };
       })
@@ -253,8 +329,8 @@ export function GranularQuestCreator({
 
   const handleSelectAllItems = () => {
     setSelectedItems(
-      (campaign.magicItems || []).map(item => ({
-        itemId: item.id,
+      filteredMagicItems.map(item => ({
+        itemId: item.id || item.name,
         name: item.name,
         role: 'trovato',
         notes: '',
@@ -414,10 +490,10 @@ export function GranularQuestCreator({
       const config = buildConfig();
       const res = await generateGranularQuestAction(config);
       if (res.data) {
-        setGeneratedTitle(res.data.title || questTitleProposal || 'Nuova Quest');
-        setGeneratedStory(res.data.notes || '');
-        setGeneratedXp(res.data.xp_award || 300);
-        setXpDetails(res.data.xp_details || null);
+        setGeneratedTitle(res.data.titleProposal || questTitleProposal || 'Nuova Quest');
+        setGeneratedStory(res.data.sessionOutline || '');
+        setGeneratedXp(res.data.xpAward || 300);
+        setXpDetails(res.data.xpDetails || null);
         toast.success('Quest generata con successo!');
       } else {
         throw new Error(res.error || 'Errore nella generazione della quest');
@@ -440,10 +516,10 @@ export function GranularQuestCreator({
         request: modificationRequest,
       });
       if (res.data) {
-        setGeneratedTitle(res.data.title || generatedTitle);
-        setGeneratedStory(res.data.notes || generatedStory);
-        if (res.data.xp_award) setGeneratedXp(res.data.xp_award);
-        if (res.data.xp_details) setXpDetails(res.data.xp_details);
+        setGeneratedTitle(res.data.titleProposal || generatedTitle);
+        setGeneratedStory(res.data.sessionOutline || generatedStory);
+        if (res.data.xpAward) setGeneratedXp(res.data.xpAward);
+        if (res.data.xpDetails) setXpDetails(res.data.xpDetails);
         setModificationRequest('');
         toast.success('Bozza della quest aggiornata!');
       } else {
@@ -475,7 +551,7 @@ export function GranularQuestCreator({
       const res = await createSession(sessionData);
       if (res.data) {
         toast.success('Quest salvata ufficialmente nelle Cronache della campagna!');
-        if (onQuestSaved) onQuestSaved(res.data);
+        if (onQuestSaved) onQuestSaved(res.data as Session);
       } else {
         throw new Error(res.error || 'Impossibile salvare la sessione');
       }
@@ -1082,28 +1158,42 @@ export function GranularQuestCreator({
                 )}
 
                 {quickPickerCategory === 'npcs' && (
-                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
                     {(!campaign.npcs || campaign.npcs.length === 0) ? (
                       <span className="text-xs text-slate-500">Nessun PNG registrato</span>
                     ) : (
                       campaign.npcs.map(npc => {
                         const parsed = typeof npc.details === 'string' ? JSON.parse(npc.details || '{}') : npc.details;
-                        const name = parsed?.name || 'PNG Senza Nome';
-                        const isSel = selectedNpcs.some(n => n.npcId === npc.id);
+                        const name = parsed?.name || npc.name || 'PNG Senza Nome';
+                        const selConfig = selectedNpcs.find(n => n.npcId === npc.id);
+                        const isSel = !!selConfig;
+                        const assignedRole = selConfig?.role || getDefaultRoleForNpc(npc);
+                        const roleInfo = roleBadgeLabels[assignedRole] || roleBadgeLabels.amico;
+
                         return (
-                          <button
+                          <div
                             key={npc.id}
-                            type="button"
-                            onClick={() => handleToggleNpc(npc)}
                             className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all flex items-center gap-1.5 ${
                               isSel
                                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                                 : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
                             }`}
                           >
-                            <span>{isSel ? '✓' : '+'}</span>
-                            <span>{name}</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleNpc(npc)}
+                              className="flex items-center gap-1.5 hover:opacity-80"
+                            >
+                              <span>{isSel ? '✓' : '+'}</span>
+                              <span>{name}</span>
+                            </button>
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] px-1 py-0 cursor-default ${roleInfo.colorClass}`}
+                            >
+                              {roleInfo.label}
+                            </Badge>
+                          </div>
                         );
                       })
                     )}
@@ -1111,29 +1201,62 @@ export function GranularQuestCreator({
                 )}
 
                 {quickPickerCategory === 'items' && (
-                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-                    {(!campaign.magicItems || campaign.magicItems.length === 0) ? (
-                      <span className="text-xs text-slate-500">Nessun oggetto salvato</span>
-                    ) : (
-                      campaign.magicItems.map(item => {
-                        const isSel = selectedItems.some(i => i.itemId === item.id);
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => handleToggleItem(item)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all flex items-center gap-1.5 ${
-                              isSel
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                                : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
-                            }`}
-                          >
-                            <span>{isSel ? '✓' : '+'}</span>
-                            <span>{item.name}</span>
-                          </button>
-                        );
-                      })
-                    )}
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400 border-b border-slate-800/80 pb-1.5 gap-1">
+                      <span>Filtra origine oggetti:</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setItemSourceFilter('all')}
+                          className={`px-1.5 py-0.5 rounded text-[10px] ${itemSourceFilter === 'all' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'hover:bg-slate-800 text-slate-400'}`}
+                        >
+                          Tutti ({campaign.magicItems?.length || 0})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setItemSourceFilter('base')}
+                          className={`px-1.5 py-0.5 rounded text-[10px] ${itemSourceFilter === 'base' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'hover:bg-slate-800 text-slate-400'}`}
+                        >
+                          🛡️ Base
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setItemSourceFilter('created')}
+                          className={`px-1.5 py-0.5 rounded text-[10px] ${itemSourceFilter === 'created' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'hover:bg-slate-800 text-slate-400'}`}
+                        >
+                          ✨ Custom
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+                      {(filteredMagicItems.length === 0) ? (
+                        <span className="text-xs text-slate-500">Nessun oggetto corrispondente ai filtri</span>
+                      ) : (
+                        filteredMagicItems.map(item => {
+                          const isSel = selectedItems.some(i => i.itemId === item.id);
+                          const isCreated = item.source === 'created' || !!item.campaignId;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => handleToggleItem(item)}
+                              className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                                isSel
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                              }`}
+                            >
+                              <span>{isSel ? '✓' : '+'}</span>
+                              <span>{item.name}</span>
+                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${isCreated ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-slate-700 text-slate-400'}`}>
+                                {isCreated ? '✨ Custom' : '🛡️ Base'}
+                              </Badge>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1816,15 +1939,52 @@ export function GranularQuestCreator({
             </div>
           </div>
 
-          {(!campaign.magicItems || campaign.magicItems.length === 0) ? (
+          {/* Source Filter Bar for Items */}
+          {campaign.magicItems && campaign.magicItems.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-xs">
+              <span className="text-slate-400 font-medium">Filtro Origine Oggetti:</span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant={itemSourceFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setItemSourceFilter('all')}
+                  className={`h-7 px-2.5 text-xs ${itemSourceFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold hover:bg-amber-400' : 'bg-slate-900 border-slate-700 text-slate-300'}`}
+                >
+                  Tutti ({campaign.magicItems.length})
+                </Button>
+                <Button
+                  type="button"
+                  variant={itemSourceFilter === 'base' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setItemSourceFilter('base')}
+                  className={`h-7 px-2.5 text-xs ${itemSourceFilter === 'base' ? 'bg-amber-500 text-slate-950 font-bold hover:bg-amber-400' : 'bg-slate-900 border-slate-700 text-slate-300'}`}
+                >
+                  🛡️ Solo Base (SRD)
+                </Button>
+                <Button
+                  type="button"
+                  variant={itemSourceFilter === 'created' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setItemSourceFilter('created')}
+                  className={`h-7 px-2.5 text-xs ${itemSourceFilter === 'created' ? 'bg-amber-500 text-slate-950 font-bold hover:bg-amber-400' : 'bg-slate-900 border-slate-700 text-slate-300'}`}
+                >
+                  ✨ Solo Creati (Custom)
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {(filteredMagicItems.length === 0) ? (
             <div className="p-6 text-center text-slate-500 bg-slate-950/50 rounded-xl border border-dashed border-slate-800 text-xs">
-              Nessun oggetto magico salvato nel caveau della campagna.
+              Nessun oggetto magico corrisponde ai filtri selezionati.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {campaign.magicItems.map(item => {
+              {filteredMagicItems.map(item => {
                 const selected = selectedItems.find(i => i.itemId === item.id);
                 const isSelected = !!selected;
+                const isCreated = item.source === 'created' || !!item.campaignId;
 
                 return (
                   <div
@@ -1845,7 +2005,12 @@ export function GranularQuestCreator({
                           className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700 cursor-pointer"
                         />
                         <label htmlFor={`item-${item.id}`} className="cursor-pointer">
-                          <span className="font-bold text-slate-200 text-xs sm:text-sm">{item.name}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-slate-200 text-xs sm:text-sm">{item.name}</span>
+                            <Badge variant="outline" className={`text-[9px] px-1 py-0 ${isCreated ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-slate-700 text-slate-400'}`}>
+                              {isCreated ? '✨ Custom' : '🛡️ Base'}
+                            </Badge>
+                          </div>
                           <span className="text-[11px] text-slate-400 block">{item.type || 'Oggetto Magico'} - {item.rarity || 'Comune'}</span>
                         </label>
                       </div>
@@ -1877,7 +2042,7 @@ export function GranularQuestCreator({
                             type="text"
                             placeholder="Es. L'amuleto reagisce alla presenza del portale."
                             value={selected.notes || ''}
-                            onChange={e => handleUpdateItemRole(item.id, selected.role, e.target.value)}
+                            onChange={e => handleUpdateItemRole(item.id, selected.role || 'trovato', e.target.value)}
                             className="h-7 bg-slate-900 border-slate-800 text-xs text-slate-300"
                           />
                         </div>
@@ -1983,7 +2148,7 @@ export function GranularQuestCreator({
                           />
                           <label htmlFor={`loc-${loc.id}`} className="cursor-pointer">
                             <span className="font-bold text-slate-200 text-xs sm:text-sm">{loc.name}</span>
-                            <span className="text-[11px] text-slate-400 block">{loc.type || 'Luogo'}</span>
+                            <span className="text-[11px] text-slate-400 block">{loc.scale || loc.style || 'Luogo'}</span>
                           </label>
                         </div>
 

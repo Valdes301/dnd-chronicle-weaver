@@ -44,6 +44,7 @@ const magicItemSchema = z.object({
   damage: z.string().optional().nullable(),
   techType: z.enum(['damage', 'defense', 'cure', 'alchemy', 'charges', 'reward', 'none']).optional(),
   imageUrl: z.string().optional().nullable(),
+  source: z.enum(['base', 'created']).optional().default('created'),
 });
 
 export type MagicItemFormData = z.infer<typeof magicItemSchema>;
@@ -97,6 +98,7 @@ export function MagicItemFormDialog({ item, campaignId, trigger, onSave }: { ite
             damage: item?.damage ?? '',
             techType: item?.techType ?? 'damage',
             imageUrl: item?.imageUrl ?? '',
+            source: item?.source ?? 'created',
         },
     });
 
@@ -113,6 +115,7 @@ export function MagicItemFormDialog({ item, campaignId, trigger, onSave }: { ite
                 damage: item?.damage ?? '',
                 techType: item?.techType ?? 'damage',
                 imageUrl: item?.imageUrl ?? '',
+                source: item?.source ?? 'created',
             });
         }
     }, [isOpen, item, form]);
@@ -193,6 +196,38 @@ export function MagicItemFormDialog({ item, campaignId, trigger, onSave }: { ite
                             </div>
                             
                             <FormField control={form.control} name="attunement" render={({ field }) => (<FormItem><FormLabel>Sintonia</FormLabel><FormControl><Input placeholder="es. Sì, No, Sì (da un mago)..." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+
+                            <FormField
+                              control={form.control}
+                              name="source"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Origine Oggetto</FormLabel>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      variant={field.value === 'created' ? 'default' : 'outline'}
+                                      size="sm"
+                                      onClick={() => field.onChange('created')}
+                                      className="flex-1 text-xs"
+                                    >
+                                      ✨ Creato / Custom (Homebrew)
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant={field.value === 'base' ? 'default' : 'outline'}
+                                      size="sm"
+                                      onClick={() => field.onChange('base')}
+                                      className="flex-1 text-xs"
+                                    >
+                                      🛡️ Base / SRD (Standard)
+                                    </Button>
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
                             <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descrizione</FormLabel><FormControl><Textarea className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </form>
                     </Form>
@@ -258,6 +293,7 @@ export function ItemsDb({ magicItems, campaignId, possessedItems, onSaveItem, on
   const [sortBy, setSortBy] = useState('alphabetical');
   const [showPossessed, setShowPossessed] = useState(false);
   const [selectedRarities, setSelectedRarities] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'base' | 'created'>('all');
 
   const handleRarityChange = (rarity: string) => {
     setSelectedRarities(prev => 
@@ -288,6 +324,12 @@ export function ItemsDb({ magicItems, campaignId, possessedItems, onSaveItem, on
         items = items.filter(item => selectedRarities.includes(item.rarity));
     }
 
+    if (sourceFilter === 'base') {
+      items = items.filter(item => item.source === 'base' || (!item.source && !item.campaignId));
+    } else if (sourceFilter === 'created') {
+      items = items.filter(item => item.source === 'created' || !!item.campaignId);
+    }
+
     items.sort((a, b) => {
         switch (sortBy) {
             case 'cost-asc':
@@ -303,7 +345,7 @@ export function ItemsDb({ magicItems, campaignId, possessedItems, onSaveItem, on
     });
 
     return items;
-  }, [search, magicItems, sortBy, showPossessed, selectedRarities, possessedItems]);
+  }, [search, magicItems, sortBy, showPossessed, selectedRarities, possessedItems, sourceFilter]);
 
   return (
     <Card>
@@ -361,6 +403,24 @@ export function ItemsDb({ magicItems, campaignId, possessedItems, onSaveItem, on
                     </DropdownMenuContent>
                 </DropdownMenu>
 
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex-shrink-0 text-[10px] uppercase font-bold">
+                            <Sparkles className="mr-2 h-3.5 w-3.5 text-amber-500" /> Origine: {
+                                sourceFilter === 'all' ? 'Tutti' :
+                                sourceFilter === 'base' ? 'Solo Base' : 'Solo Creati'
+                            }
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuRadioGroup value={sourceFilter} onValueChange={(val) => setSourceFilter(val as any)}>
+                            <DropdownMenuRadioItem value="all">Tutti gli Oggetti</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="base">🛡️ Solo Base (SRD)</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="created">✨ Solo Creati (Custom)</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
                 <div className="flex items-center space-x-2">
                     <Switch id="show-possessed" checked={showPossessed} onCheckedChange={setShowPossessed} className="scale-75" />
                     <Label htmlFor="show-possessed" className="flex items-center gap-2 cursor-pointer text-[10px] uppercase font-bold opacity-70">
@@ -378,7 +438,15 @@ export function ItemsDb({ magicItems, campaignId, possessedItems, onSaveItem, on
                 <AccordionPrimitive.Trigger className="flex flex-1 items-center justify-between py-4 font-medium text-left transition-all hover:underline [&[data-state=open]>svg]:rotate-180">
                   <div className="flex items-center gap-2 flex-wrap">
                       <span className="break-words pr-2">{item.name}</span>
-                      {item.source === 'created' && <Badge variant="secondary"><PlusCircle className="h-3 w-3 mr-1"/>Creato</Badge>}
+                      {(item.source === 'created' || !!item.campaignId) ? (
+                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                          <PlusCircle className="h-3 w-3 mr-1"/>Creato
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-slate-400 border-slate-700">
+                          🛡️ Base
+                        </Badge>
+                      )}
                       <Badge variant="outline">{item.rarity}</Badge>
                       <TechBadge value={item.damage} type={item.techType as any} />
                   </div>
