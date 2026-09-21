@@ -74,9 +74,6 @@ export function PinConfigDialog({ open, onOpenChange, onConfigSaved }: PinConfig
     const handlePlayerModeChange = (e: any) => {
       const pm = Boolean(e.detail?.isPlayerMode);
       setPlayerMode(pm);
-      if (pm && open) {
-        onOpenChange(false);
-      }
     };
 
     window.addEventListener('dnd-player-mode-changed', handlePlayerModeChange);
@@ -85,10 +82,6 @@ export function PinConfigDialog({ open, onOpenChange, onConfigSaved }: PinConfig
 
   useEffect(() => {
     if (open) {
-      if (isPlayerMode()) {
-        onOpenChange(false);
-        return;
-      }
       const isConfig = isPinConfigured();
       setConfigured(isConfig);
       setActiveTab(isConfig ? 'manage' : 'setup');
@@ -100,11 +93,7 @@ export function PinConfigDialog({ open, onOpenChange, onConfigSaved }: PinConfig
       setErrorMsg(null);
       setRemoveConfirmOpen(false);
     }
-  }, [open, onOpenChange]);
-
-  if (playerMode || isPlayerMode()) {
-    return null;
-  }
+  }, [open]);
 
   const handleSaveSetup = () => {
     setErrorMsg(null);
@@ -139,8 +128,8 @@ export function PinConfigDialog({ open, onOpenChange, onConfigSaved }: PinConfig
     }
 
     toast({
-      title: "Protezione Attivata!",
-      description: "Il PIN e la Password di sicurezza sono stati configurati con successo.",
+      title: "Modalità Master Attivata!",
+      description: "Il PIN è stato configurato. Sei ora in modalità Dungeon Master con accesso completo.",
     });
 
     onOpenChange(false);

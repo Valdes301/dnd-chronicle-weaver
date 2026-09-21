@@ -62,6 +62,12 @@ export function setIsLocked(locked: boolean): void {
   window.dispatchEvent(new CustomEvent('dnd-lock-state-changed', { detail: { isLocked: locked } }));
 }
 
+export function openPinConfigDialog(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('dnd-open-pin-config'));
+  }
+}
+
 export function configurePinAndPass(pin: string, password: string, autoLockMinutes: number = 0): { success: boolean; error?: string } {
   if (typeof window === 'undefined') return { success: false, error: 'Ambiente non valido' };
   
@@ -78,9 +84,14 @@ export function configurePinAndPass(pin: string, password: string, autoLockMinut
   localStorage.setItem(STORAGE_KEYS.PIN_HASH, hashSecret(cleanPin));
   localStorage.setItem(STORAGE_KEYS.PASSWORD_HASH, hashSecret(cleanPass));
   localStorage.setItem(STORAGE_KEYS.AUTOLOCK_MINUTES, String(autoLockMinutes));
+  // Quando si configura il PIN, si apre la modalità Master e si sblocca lo schermo
+  localStorage.setItem(STORAGE_KEYS.IS_PLAYER_MODE, 'false');
+  localStorage.setItem(STORAGE_KEYS.IS_LOCKED, 'false');
   touchActivity();
 
   window.dispatchEvent(new CustomEvent('dnd-pin-config-changed'));
+  window.dispatchEvent(new CustomEvent('dnd-player-mode-changed', { detail: { isPlayerMode: false } }));
+  window.dispatchEvent(new CustomEvent('dnd-lock-state-changed', { detail: { isLocked: false } }));
   return { success: true };
 }
 
@@ -197,8 +208,18 @@ export const NAV_SECTIONS: NavSectionMeta[] = [
 export const DEFAULT_BLOCKED_VIEWS = NAV_SECTIONS.filter(s => s.defaultBlocked).map(s => s.id);
 
 export function isPlayerMode(): boolean {
+  if (typeof window === 'undefined') return true;
+  const stored = localStorage.getItem(STORAGE_KEYS.IS_PLAYER_MODE);
+  if (stored === null) {
+    // Su nuovo browser o dispositivo: apri sempre in schermata Giocatore di default
+    return true;
+  }
+  return stored === 'true';
+}
+
+export function hasMasterConfiguredViews(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem(STORAGE_KEYS.IS_PLAYER_MODE) === 'true';
+  return isPinConfigured() && localStorage.getItem(STORAGE_KEYS.BLOCKED_VIEWS) !== null;
 }
 
 export function setPlayerMode(enabled: boolean): void {

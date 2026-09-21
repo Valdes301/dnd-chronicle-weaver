@@ -205,7 +205,7 @@ function ManagerContent(props: CampaignManagerProps & { initialView?: string; on
   const [pendingSession, setPendingSession] = useState<Session | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [playerModeActive, setPlayerModeActive] = useState<boolean>(false);
+  const [playerModeActive, setPlayerModeActive] = useState<boolean>(true);
   const [blockedViewsList, setBlockedViewsList] = useState<string[]>([]);
   const [mainBgConfig, setMainBgConfig] = useState<BackgroundConfig>(DEFAULT_BACKGROUND_SETTINGS.main);
 
@@ -614,6 +614,11 @@ export function CampaignManager(props: CampaignManagerProps) {
     };
     window.addEventListener('dnd-lock-state-changed', handleLock);
 
+    const handleOpenPinConfig = () => {
+      setIsPinDialogOpen(true);
+    };
+    window.addEventListener('dnd-open-pin-config', handleOpenPinConfig);
+
     const recordActivity = () => {
       touchActivity();
     };
@@ -627,6 +632,7 @@ export function CampaignManager(props: CampaignManagerProps) {
 
     return () => {
       window.removeEventListener('dnd-lock-state-changed', handleLock);
+      window.removeEventListener('dnd-open-pin-config', handleOpenPinConfig);
       window.removeEventListener('mousemove', recordActivity);
       window.removeEventListener('touchstart', recordActivity);
       window.removeEventListener('keydown', recordActivity);
@@ -729,9 +735,7 @@ export function CampaignManager(props: CampaignManagerProps) {
         <ManagerContent 
             {...props}
             onOpenPinConfig={() => {
-              if (!isPlayerMode()) {
-                setIsPinDialogOpen(true);
-              }
+              setIsPinDialogOpen(true);
             }}
         />
       ) : null}

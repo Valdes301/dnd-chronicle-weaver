@@ -76,7 +76,7 @@ const CATEGORY_META = {
 };
 
 export function PlayerPermissionsMatrix() {
-  const [playerMode, setPlayerModeState] = useState<boolean>(false);
+  const [playerMode, setPlayerModeState] = useState<boolean>(true);
   const [blockedViews, setBlockedViewsState] = useState<string[]>([]);
   const [behavior, setBehaviorState] = useState<BlockedBehavior>('hide');
   const [pinConfigured, setPinConfigured] = useState<boolean>(false);

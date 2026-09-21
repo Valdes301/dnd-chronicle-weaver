@@ -31,7 +31,7 @@ export function QuickLockButton({
 }: QuickLockButtonProps) {
   const [configured, setConfigured] = useState<boolean>(false);
   const [locked, setLocked] = useState<boolean>(false);
-  const [playerMode, setPlayerMode] = useState<boolean>(false);
+  const [playerMode, setPlayerMode] = useState<boolean>(true);
 
   const updateState = useCallback(() => {
     setConfigured(isPinConfigured());

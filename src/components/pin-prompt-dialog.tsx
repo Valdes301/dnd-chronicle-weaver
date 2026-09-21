@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Lock, Key, ShieldAlert, CheckCircle2, Delete } from 'lucide-react';
-import { verifyPin, verifyPassword, isPinConfigured } from '@/lib/pin-storage';
+import { Lock, Key, ShieldAlert, CheckCircle2, Delete, Shield, KeyRound } from 'lucide-react';
+import { verifyPin, verifyPassword, isPinConfigured, openPinConfigDialog } from '@/lib/pin-storage';
 
 interface PinPromptDialogProps {
   open: boolean;
@@ -34,9 +34,11 @@ export function PinPromptDialog({
   const [usePassword, setUsePassword] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [hasPin, setHasPin] = useState<boolean>(false);
 
   useEffect(() => {
     if (open) {
+      setHasPin(isPinConfigured());
       setPin('');
       setPassword('');
       setUsePassword(false);
@@ -63,8 +65,8 @@ export function PinPromptDialog({
 
   const submitPin = (valToTest: string) => {
     if (!isPinConfigured()) {
-      // Nessun PIN configurato: consente l'accesso diretto
-      triggerSuccess();
+      openPinConfigDialog();
+      onOpenChange(false);
       return;
     }
 
@@ -97,6 +99,11 @@ export function PinPromptDialog({
     }, 400);
   };
 
+  const handleOpenSetup = () => {
+    onOpenChange(false);
+    openPinConfigDialog();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[380px] bg-stone-950 border-amber-900/60 text-stone-100 shadow-2xl">
@@ -108,7 +115,7 @@ export function PinPromptDialog({
             {title}
           </DialogTitle>
           <DialogDescription className="text-stone-400 text-xs text-center">
-            {description}
+            {hasPin ? description : "Nessun PIN Master configurato su questo dispositivo. Configura il tuo PIN per attivare la Modalità Master."}
           </DialogDescription>
         </DialogHeader>
 
@@ -126,7 +133,21 @@ export function PinPromptDialog({
           </div>
         )}
 
-        {!usePassword ? (
+        {!hasPin ? (
+          <div className="space-y-4 py-3 text-center">
+            <div className="p-3.5 rounded-lg bg-amber-950/30 border border-amber-800/40 text-xs text-amber-200/90 leading-relaxed">
+              L&apos;applicazione si apre in <strong className="text-emerald-400">Modalità Giocatore</strong> per proteggere i tuoi contenuti. Per sbloccare la <strong className="text-amber-300">Modalità Master</strong>, imposta un PIN di sicurezza.
+            </div>
+            <Button
+              type="button"
+              onClick={handleOpenSetup}
+              className="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-serif font-bold text-xs uppercase tracking-wider gap-2 min-h-[44px] shadow-lg shadow-amber-950/40"
+            >
+              <KeyRound className="w-4 h-4" />
+              Configura PIN e Attiva Master
+            </Button>
+          </div>
+        ) : !usePassword ? (
           <div className="space-y-4 py-2">
             {/* Indicatori a 4 pallini */}
             <div className="flex justify-center gap-3 my-2">
@@ -230,7 +251,7 @@ export function PinPromptDialog({
           >
             Annulla
           </Button>
-          {!usePassword && (
+          {hasPin && !usePassword && (
             <button
               type="button"
               onClick={() => setUsePassword(true)}

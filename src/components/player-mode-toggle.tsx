@@ -32,7 +32,7 @@ export function PlayerModeToggle({
   variant = 'outline',
   iconOnly = false
 }: PlayerModeToggleProps) {
-  const [playerMode, setPlayerModeState] = useState<boolean>(false);
+  const [playerMode, setPlayerModeState] = useState<boolean>(true);
   const [isPromptOpen, setIsPromptOpen] = useState<boolean>(false);
   const [blockedCount, setBlockedCount] = useState<number>(0);
   const { toast } = useToast();
@@ -64,12 +64,8 @@ export function PlayerModeToggle({
   const handleToggleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (playerMode) {
-      // Da Giocatore a Master: se c'è un PIN, richiedilo
-      if (isPinConfigured()) {
-        setIsPromptOpen(true);
-      } else {
-        exitPlayerMode();
-      }
+      // Da Giocatore a Master: apri sempre il prompt del PIN (se configurato chiede il PIN, se non configurato invita a configurarlo)
+      setIsPromptOpen(true);
     } else {
       // Da Master a Giocatore: attiva subito
       setPlayerMode(true);

@@ -48,6 +48,7 @@ import {
   getBlockedViews,
   getBlockedBehavior,
   BlockedBehavior,
+  hasMasterConfiguredViews,
 } from '@/lib/pin-storage';
 import { PinPromptDialog } from './pin-prompt-dialog';
 
@@ -99,7 +100,7 @@ export const SidebarNav = memo(function SidebarNav({ activeView, onViewChange, o
   const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
   const [isClient, setIsClient] = useState(false);
   const [hasPin, setHasPin] = useState<boolean>(false);
-  const [playerMode, setPlayerModeState] = useState<boolean>(false);
+  const [playerMode, setPlayerModeState] = useState<boolean>(true);
   const [blockedViews, setBlockedViewsState] = useState<string[]>([]);
   const [blockedBehavior, setBlockedBehaviorState] = useState<BlockedBehavior>('hide');
   const [promptView, setPromptView] = useState<string | null>(null);
@@ -153,13 +154,7 @@ export const SidebarNav = memo(function SidebarNav({ activeView, onViewChange, o
 
   const handleTogglePlayerMode = () => {
     if (playerMode) {
-      if (isPinConfigured()) {
-        setIsExitPlayerPromptOpen(true);
-      } else {
-        setPlayerMode(false);
-        setPlayerModeState(false);
-        toast({ title: "Modalità DM Ripristinata", description: "Accesso completo sbloccato." });
-      }
+      setIsExitPlayerPromptOpen(true);
     } else {
       setPlayerMode(true);
       setPlayerModeState(true);
@@ -168,8 +163,12 @@ export const SidebarNav = memo(function SidebarNav({ activeView, onViewChange, o
   };
 
   const renderMenuItem = (item: { id: string; label: string; icon: any }) => {
-    const isBlocked = playerMode && blockedViews.includes(item.id);
-    if (isBlocked && blockedBehavior === 'hide') {
+    const isBlocked = playerMode && (
+      !hasMasterConfiguredViews() 
+        ? item.id !== 'bacheca' 
+        : blockedViews.includes(item.id)
+    );
+    if (isBlocked && (blockedBehavior === 'hide' || !hasMasterConfiguredViews())) {
       return null;
     }
 
@@ -209,7 +208,14 @@ export const SidebarNav = memo(function SidebarNav({ activeView, onViewChange, o
   };
 
   // Filtra la visibilità dei gruppi se tutti gli elementi sono nascosti
-  const isItemVisible = (id: string) => !(playerMode && blockedViews.includes(id) && blockedBehavior === 'hide');
+  const isItemVisible = (id: string) => {
+    const isBlocked = playerMode && (
+      !hasMasterConfiguredViews() 
+        ? id !== 'bacheca' 
+        : blockedViews.includes(id)
+    );
+    return !(isBlocked && (blockedBehavior === 'hide' || !hasMasterConfiguredViews()));
+  };
   const hasVisibleNavItems = navItems.some(i => isItemVisible(i.id));
   const hasVisibleCreativeItems = creativeItems.some(i => isItemVisible(i.id));
   const hasVisibleHandbookItems = handbookItems.some(i => isItemVisible(i.id));
